@@ -96,9 +96,39 @@
   footer{text-align:center;color:var(--muted);padding:28px 12px}
 
   /* VARIATION MODAL (E-Store Pink Soft) */
-  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:200}
-  .modal-card{width:94%;max-width:760px;background:var(--card);border-radius:20px;padding:18px;box-shadow:0 30px 80px rgba(20,20,40,0.25);display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .modal-card img{width:100%;height:320px;object-fit:cover;border-radius:12px}
+  .modal-backdrop {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* INI YANG PENTING BANGET */
+.modal-card {
+  background: white;
+  width: 90%;
+  max-width: 750px;        /* 🔥 BIAR UKURAN TIDAK FULL */
+  max-height: 85vh;
+  overflow-y: auto;
+
+  padding: 25px 30px;
+  border-radius: 22px;     /* 🔥 SAMA PERSIS KAYAK SEVEN-COLORS */
+  display: flex;
+  flex-direction: column;  /* Karena Pink Soft modelnya vertikal */
+  gap: 20px;
+}
+
+/* Gambar di modal */
+.modal-card img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 20px;
+}
   .modal-meta h3{margin:0 0 6px 0}
   .variant-group{margin-top:10px}
   .variant-title{font-size:13px;color:var(--muted);margin-bottom:8px}
@@ -646,6 +676,7 @@ document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ document.getEl
 </script>
 </body>
 </html>
+
 
 
 
