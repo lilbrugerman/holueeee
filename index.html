@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini E-Store - Killow's Gooning Space</title>
+
+  <!-- FAVICON -->
+  <link rel="icon" type="image/png" href="malewife.png" />
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Mini E-Store — Variasi (Pink Soft)</title>
@@ -96,39 +102,9 @@
   footer{text-align:center;color:var(--muted);padding:28px 12px}
 
   /* VARIATION MODAL (E-Store Pink Soft) */
-  .modal-backdrop {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.4);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-/* INI YANG PENTING BANGET */
-.modal-card {
-  background: white;
-  width: 90%;
-  max-width: 750px;        /* 🔥 BIAR UKURAN TIDAK FULL */
-  max-height: 85vh;
-  overflow-y: auto;
-
-  padding: 25px 30px;
-  border-radius: 22px;     /* 🔥 SAMA PERSIS KAYAK SEVEN-COLORS */
-  display: flex;
-  flex-direction: column;  /* Karena Pink Soft modelnya vertikal */
-  gap: 20px;
-}
-
-/* Gambar di modal */
-.modal-card img {
-  width: 100%;
-  max-height: 280px;
-  object-fit: cover;
-  border-radius: 20px;
-}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:200}
+  .modal-card{width:94%;max-width:760px;background:var(--card);border-radius:20px;padding:18px;box-shadow:0 30px 80px rgba(20,20,40,0.25);display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .modal-card img{width:100%;height:320px;object-fit:cover;border-radius:12px}
   .modal-meta h3{margin:0 0 6px 0}
   .variant-group{margin-top:10px}
   .variant-title{font-size:13px;color:var(--muted);margin-bottom:8px}
@@ -273,21 +249,21 @@
 
 <!-- VARIATION MODAL (E-STORE PINK SOFT) -->
 <div id="varModal" class="modal-backdrop" onclick="closeVarModal(event)">
-  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle" onclick="event.stopPropagation()">
     <img id="modalImage" src="" alt="produk" />
     <div class="modal-meta">
       <h3 id="modalTitle"></h3>
       <div class="small" id="modalDesc"></div>
-    </div>
 
-    <!-- INI TEMPAT VARIASI BARU -->
-    <div id="varDynamic"></div>
-    <!-- INI TEMPAT VARIASI BARU -->
+      <div class="variant-group">
+        <div class="variant-title">Pilih Ukuran</div>
+        <div id="varSizeList" class="variant-list"></div>
+      </div>
 
-    <button class="add-btn" onclick="confirmVariant()">Tambah ke Keranjang</button>
-  </div>
-</div>
-
+      <div class="variant-group">
+        <div class="variant-title">Pilih Rasa</div>
+        <div id="varTasteList" class="variant-list"></div>
+      </div>
 
       <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
         <div class="qty-small">
@@ -310,7 +286,7 @@
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<footer>Made with ❤️ — Tata's Shop. Edit product list in code.</footer>
+<footer>Made with the power of delulu (and ChatGPT) ✨</footer>
 
 <script>
 /* ========== PRODUCTS DATA (edit di sini) ==========
@@ -331,9 +307,9 @@ const productsData = [
   {id:2, title:"Casual Loafers", price:90000, basePrice:90000, category:"shoes", image:"letsky.jpg", desc:"Telamon hi.", badge:"NEW",
     variations: {
       ukuran: [
-        {name:"Kecil (jomblo)", addPrice:0},
-        {name:"Sedang (couple)", addPrice:5000},
-        {name:"Besar (family)", addPrice:15000}
+        {name:"S", addPrice:0},
+        {name:"M", addPrice:5000},
+        {name:"L", addPrice:15000}
       ],
       warna: ["Putih","Hitam","Coklat","Abu-Abu","Navy","Merah","Cream","Request"]
     }
@@ -453,148 +429,156 @@ function applyFilters(){
 /* quick product preview (simple) */
 function openProduct(id){ const p = productsData.find(x=>x.id===id); if(!p) return; alert(`${p.title}\n\n${p.desc}\n\nHarga: ${p.variations ? formatRp(p.basePrice||p.price) : formatRp(p.price)}`); }
 
-/* ========== UNIVERSAL VARIATION MODAL ========== */
-/* ========== UNIVERSAL VARIATION MODAL ========== */
-const modal = document.getElementById("varModal");
-let modalState = { productId:null, selected:{}, qty:1 };
+/* ========== VARIATION MODAL LOGIC ========== */
+/* ========== VARIATION MODAL (DYNAMIC VERSION) ========== */
+
+const modal = document.getElementById('varModal');
+let modalState = {
+  productId: null,
+  qty: 1,
+  selected: {} // dynamic: ukuran, rasa, warna, model, benang, etc
+};
 
 function handleAddClick(id){
   const p = productsData.find(x=>x.id===id);
-  if (!p) return;
+  if(!p) return;
 
-  // no variations → direct add
-  if (!p.variations){
+  if(p.variations){
+    openVarModal(id);
+  } else {
     const qty = Math.max(1, parseInt(document.getElementById('qty-inline-'+id)?.value || 1));
-    cart.push({ id:p.id, title:p.title, price:Math.round(p.price), qty, image:p.image, variant:{} });
+    cart.push({
+      id:p.id,
+      title:p.title,
+      price:p.price,
+      qty:qty,
+      image:p.image,
+      variant:{}
+    });
     saveCart();
     showToast(`${p.title} ditambahkan (${qty})`);
-    return;
   }
-
-  // has variations → open modal
-  openVarModal(id);
 }
 
 function openVarModal(id){
   const p = productsData.find(x=>x.id===id);
-  if (!p || !p.variations) return;
+  if(!p || !p.variations) return;
 
-  modalState = { productId:id, selected:{}, qty:1 };
-  document.getElementById("modalImage").src = p.image;
-  document.getElementById("modalTitle").textContent = p.title;
-  document.getElementById("modalDesc").textContent = p.desc || "";
-  document.getElementById("modalQty").value = 1;
+  modalState.productId = id;
+  modalState.qty = 1;
+  modalState.selected = {};
 
-  const container = document.getElementById("varDynamic");
-  container.innerHTML = "";
+  document.getElementById('modalImage').src = p.image;
+  document.getElementById('modalTitle').textContent = p.title;
+  document.getElementById('modalDesc').textContent = p.desc || '';
+  document.getElementById('modalQty').value = 1;
 
-  // create variation groups dynamically
-  Object.entries(p.variations).forEach(([groupName, items], index)=>{
-    const groupBox = document.createElement("div");
-    groupBox.className = "var-block";
+  // clear previous variant UI
+  document.getElementById('varSizeList').innerHTML = '';
+  document.getElementById('varTasteList').innerHTML = '';
 
-    const label = document.createElement("h4");
-    label.textContent = "Pilih " + capitalize(groupName);
-    groupBox.appendChild(label);
+  // dynamic rendering area
+  const meta = document.querySelector('.modal-meta');
+  meta.querySelectorAll('.variant-group.dynamic').forEach(x=>x.remove());
 
-    const wrapper = document.createElement("div");
-    wrapper.className = "variant-container";
+  // generate dynamic variation groups
+  Object.keys(p.variations).forEach(key => {
+    const group = document.createElement('div');
+    group.className = "variant-group dynamic";
 
-    items.forEach((item, idx)=>{
-      const name = typeof item === "string" ? item : item.name;
+    const title = document.createElement('div');
+    title.className = "variant-title";
+    title.textContent = "Pilih " + key.charAt(0).toUpperCase() + key.slice(1);
 
-      const btn = document.createElement("div");
-      btn.className = "variant-item" + (idx===0 ? " active" : "");
-      btn.textContent = name;
+    const list = document.createElement('div');
+    list.className = "variant-list";
 
-      if (idx===0) modalState.selected[groupName] = item;
+    const options = p.variations[key];
 
-      btn.onclick = ()=>{
-        modalState.selected[groupName] = item;
+    options.forEach((opt, idx)=>{
+      const item = document.createElement('div');
+      item.className = "variant-item" + (idx === 0 ? " active" : "");
 
-        wrapper.querySelectorAll(".variant-item")
-          .forEach(b=>b.classList.remove("active"));
-        btn.classList.add("active");
+      // unify text value
+      const label = typeof opt === "string" ? opt : opt.name;
+      item.textContent = label;
 
+      item.onclick = ()=>{
+        modalState.selected[key] = opt;
+        list.querySelectorAll('.variant-item').forEach(e=>e.classList.remove('active'));
+        item.classList.add('active');
         updateModalPrice();
       };
 
-      wrapper.appendChild(btn);
+      if(idx === 0) modalState.selected[key] = opt;
+
+      list.appendChild(item);
     });
 
-    groupBox.appendChild(wrapper);
-    container.appendChild(groupBox);
+    group.appendChild(title);
+    group.appendChild(list);
+    meta.insertBefore(group, meta.querySelector('.modal-footer'));
   });
 
   updateModalPrice();
-  modal.style.display = "flex";
-}
-
-function capitalize(str){
-  return str.charAt(0).toUpperCase() + str.slice(1);
+  modal.style.display = 'flex';
 }
 
 function closeVarModal(){
-  modal.style.display = "none";
-  modalState = { productId:null, selected:{}, qty:1 };
+  modal.style.display = 'none';
 }
 
 function changeModalQty(delta){
-  const el = document.getElementById("modalQty");
+  let el = document.getElementById('modalQty');
   let v = Math.max(1, parseInt(el.value || 1) + delta);
   el.value = v;
   modalState.qty = v;
   updateModalPrice();
 }
 
-document.getElementById("modalQty").addEventListener("input", e=>{
+document.getElementById('modalQty').addEventListener('input', (e)=>{
   modalState.qty = Math.max(1, parseInt(e.target.value||1));
   updateModalPrice();
 });
 
 function updateModalPrice(){
   const p = productsData.find(x=>x.id===modalState.productId);
-  if (!p) return;
+  if(!p) return;
 
-  let base = p.basePrice || p.price;
+  let price = p.basePrice || p.price;
 
-  Object.values(modalState.selected).forEach(v=>{
-    if (typeof v === "object" && v.addPrice){
-      base += v.addPrice;
+  // apply additional price from selected variations
+  Object.values(modalState.selected).forEach(opt=>{
+    if(typeof opt === 'object' && opt.addPrice){
+      price += opt.addPrice;
     }
   });
 
-  const total = base * modalState.qty;
-  document.getElementById("modalPrice").textContent = formatRp(total);
+  const total = price * modalState.qty;
+  document.getElementById('modalPrice').textContent = formatRp(total);
 
-  document.getElementById("modalAddBtn").onclick = ()=> modalAddToCart();
+  document.getElementById('modalAddBtn').onclick = ()=> modalAddToCart(p.id, price);
 }
 
-function modalAddToCart(){
-  const p = productsData.find(x=>x.id===modalState.productId);
-  if (!p) return;
+function modalAddToCart(id, unitPrice){
+  const p = productsData.find(x=>x.id===id);
+  if(!p) return;
 
   const qty = modalState.qty;
-  let base = p.basePrice || p.price;
+  const variantLabels = {};
 
-  let variantOut = {};
-
-  Object.entries(modalState.selected).forEach(([group, val])=>{
-    if (typeof val === "object") {
-      base += val.addPrice || 0;
-      variantOut[group] = val.name;
-    } else {
-      variantOut[group] = val;
-    }
+  Object.keys(modalState.selected).forEach(key=>{
+    const opt = modalState.selected[key];
+    variantLabels[key] = typeof opt === 'string' ? opt : opt.name;
   });
 
   cart.push({
     id:p.id,
     title:p.title,
-    price:base,
-    qty,
+    price:unitPrice,
+    qty:qty,
     image:p.image,
-    variant: variantOut
+    variant: variantLabels
   });
 
   saveCart();
